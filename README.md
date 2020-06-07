@@ -34,3 +34,5 @@ After that just do `kubectl apply -f k8s/*`.
 In production some S3 service provider should be used but here to emulate a S3 service I just use Minio. A job with a code to set up Minio is in `minio_setup_job.yml`.
 
 I tested it using K3s and just used Traefik ingress rules as K3s includes traefik by default.
+
+After the app is deployed, navigate to the `<K3s Traefik root URL>` to see the single page of the app. To debug you can also access `<K3s Traefik root URL>/adminer` or `<K3s Traefik root URL>/minio`.
