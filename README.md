@@ -15,4 +15,14 @@ Looking at this code please keep in mind that this is merely a test task, very s
 
 This app posseses a lot of flaws which I'm aware of and which are normal keeping in mind the nature of this task.
 
-For example, it keeps some secrets right in the repo in secret.yaml file, it almost has no comments (thought the code is really simple and this description and explicit names of variables should be enough), it may be uses not all the power of  Django and doesnt follow the best practices, etc, etc.
+For example, it keeps some secrets right in the repo in secret.yaml file, it almost has no comments (thought the code is really simple and this description and explicit names of variables should be enough), it may be uses not all the power of  Django and doesnt follow the best practices of Django and K8s, etc, etc.
+
+### Instructions:
+
+The application uses standard RabbitMQ, Minio (to emulate some S3 service) and MySQL Docker images. All deployments and services are combined into a single YAML (I do know that's not nice). For the application itself and celery workers a custom Docker image should be built. Do:
+
+```cd django && docker build -t video_archive .```
+
+or try to pull it as `barkmight/video_archive`.
+
+(Yes, a single big image for both application and Celery workers. Look, that's not very wise but after all this is a test task and polisihn it to an ideal state would taken a bunch of time. Unpaid time !)
