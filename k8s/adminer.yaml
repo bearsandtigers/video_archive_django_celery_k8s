@@ -1,0 +1,35 @@
+# Adminer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: adminer
+spec:
+  type: ClusterIP
+  selector:
+    name: adminer
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adminer
+  labels:
+    name: adminer
+spec:
+  selector:
+    matchLabels:
+      name: adminer
+  template:
+    metadata:
+      labels:
+        name: adminer
+    spec:
+      containers:
+      - image: adminer
+        name: adminer
+        ports:
+        - containerPort: 8080

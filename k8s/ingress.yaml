@@ -1,0 +1,38 @@
+# Ingress (Traefik is default for k3s)
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: ingress
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+spec:
+  rules:
+  - http:
+      paths:
+      # To directly access MySQL
+      - path: /adminer
+        backend:
+          serviceName: adminer
+          servicePort: 8080
+
+      # To directly access Minio
+      - path: /minio
+        backend:
+          serviceName: s3
+          servicePort: 9000
+
+      - path: /public
+        backend:
+          serviceName: s3
+          servicePort: 9000
+
+      - path: /
+        backend:
+          serviceName: django
+          servicePort: 8000
+
+      - path: /new
+        backend:
+          serviceName: django
+          servicePort: 8000

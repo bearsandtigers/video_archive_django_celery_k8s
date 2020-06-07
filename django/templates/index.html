@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Clips</title>
+        <link rel="stylesheet"
+        href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+        
+    <style>
+/* CSS */
+.list-decorated {
+  list-style: none;
+
+}
+.list-decorated>li {
+  position: relative;
+  display: block;
+  margin-bottom: .25rem;
+  padding: .325rem .825rem .325rem 1.325rem;
+}
+
+.thumbnail {
+  width: 640px;
+  height: 360px;
+}
+
+</style>
+    </head>
+    <body>
+    {% if messages %}
+    <div>
+    <ul>
+        {% for message in messages %}
+            <li>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    </div>
+    {% endif %}
+        
+        <div class="container d-flex justify-content-center">
+                <form action="{% url 'App:new' %}" method="POST" enctype="multipart/form-data" >
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                <button type="submit" class="btn btn-primary">Add</button>
+                </form>
+        </div>
+        <div class="container d-flex"><strong>Clips list</strong></div>
+        <div class="container d-flex">
+        <!-- List of clips -->
+        {% if clips %}
+        <ul  class="list-group list-decorated">
+        {% for clip in clips %}
+            <li  class="list-group-item">
+            {% if clip.mp4_file %}
+              {{ clip.id }})&nbsp;{{ clip.original_name }}&nbsp;<br>
+              <video controls="controls">
+              <source src="public/{{ clip.mp4_file }}">
+              </video>
+            <!-- <li>{{ clip.id }}&nbsp;{{ clip.original_name }}&nbsp;{{ clip.link }}</li> -->
+            {% elif clip.thumbnail_file %}
+              {{ clip.id }}) &nbsp;{{ clip.original_name }}&nbsp;<br>
+              <img class="thumbnail" src="public/{{ clip.thumbnail_file }}"></img>
+            {% elif clip.original_file %}
+              {{ clip.id }}) &nbsp;{{ clip.original_name }}&nbsp;<br>
+              <span>No preview</span>
+            {% else %}
+              {{ clip.id }}) &nbsp;{{ clip.link|truncatechars:25 }}&nbsp;<br>
+              <span>Being downloaded...</span>
+            {% endif %} 
+            </li>
+        {% endfor %}
+        </ul>
+        {% else %}
+        <p>No clips.</p>
+        {% endif %}  
+       </div>
+
+    </body>
+</html>

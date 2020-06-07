@@ -1,0 +1,51 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-setup
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: minio-setup
+        image: bash
+        command: [ "bash", "-c",
+           "wget https://dl.min.io/client/mc/release/linux-amd64/mc && \
+            chmod +x mc && \
+            until nslookup s3; \
+            do echo Waiting for minio to start; done && \
+            ./mc mb storage/${S3_PUBLIC_BUCKET_NAME} 2>/dev/null && \
+            ./mc policy set download storage/${S3_PUBLIC_BUCKET_NAME} && \
+            ./mc mb storage/${S3_ORIGINAL_BUCKET_NAME} 2>/dev/null " ]
+        env:
+        - name: S3_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: S3_URL
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: S3_ACCESS_KEY
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: S3_SECRET_KEY
+        - name: S3_PUBLIC_BUCKET_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: S3_PUBLIC_BUCKET_NAME
+        - name: S3_ORIGINAL_BUCKET_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: S3_ORIGINAL_BUCKET_NAME
+        - name: MC_HOST_storage
+          value: "http://$(MINIO_ACCESS_KEY):$(MINIO_SECRET_KEY)@s3:9000"
+
+
+

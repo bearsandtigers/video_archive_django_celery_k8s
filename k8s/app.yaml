@@ -1,0 +1,357 @@
+# RabbitMQ
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mq
+spec:
+  type: ClusterIP
+  selector:
+    name: mq
+  ports:
+  - protocol: TCP
+    port: 5672
+    targetPort: 5672
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitui
+spec:
+  type: ClusterIP
+  selector:
+    name: mq
+  ports:
+  - protocol: TCP
+    port: 15672
+    targetPort: 15672
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mq
+  labels:
+    name: mq
+spec:
+  selector:
+    matchLabels:
+      name: mq
+  template:
+    metadata:
+      labels:
+        name: mq
+    spec:
+      containers:
+      - image: rabbitmq:3-alpine
+        name: mq
+        ports:
+        - containerPort: 5672
+        - containerPort: 15672
+
+# Minio for S3 emulation
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: s3
+spec:
+  type: ClusterIP
+  selector:
+    name: s3
+  ports:
+  - protocol: TCP
+    port: 9000
+    targetPort: 9000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: s3
+  labels:
+    name: s3
+spec:
+  selector:
+    matchLabels:
+      name: s3
+  template:
+    metadata:
+      labels:
+        name: s3
+    spec:
+      containers:
+      - image: minio/minio
+        name: s3
+        ports:
+        - containerPort: 9000
+        env:
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: S3_ACCESS_KEY
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: S3_SECRET_KEY
+        command: [ "/bin/sh",
+          "-ce",
+          "/usr/bin/docker-entrypoint.sh minio server /data" ]
+
+# MySQL (stateless, no PVC used)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  type: ClusterIP
+  selector:
+    name: mysql
+  ports:
+  - protocol: TCP
+    port: 3306
+    targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    name: mysql
+spec:
+  selector:
+    matchLabels:
+      name: mysql
+  template:
+    metadata:
+      labels:
+        name: mysql
+    spec:
+      containers:
+      - image: mysql
+        name: mysql
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: MYSQL_ROOT_PASSWORD
+        - name: MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: MYSQL_DATABASE
+        - name: MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: MYSQL_USER
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: MYSQL_PASSWORD
+
+# Django application
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: django
+spec:
+  type: ClusterIP
+  selector:
+    name: django
+  ports:
+  - protocol: TCP
+    port: 8000
+    targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django
+  labels:
+    name: django
+spec:
+  selector:
+    matchLabels:
+      name: django
+  template:
+    metadata:
+      labels:
+        name: django
+    spec:
+      initContainers:
+      - name: django-migrations
+        image: barkmight/video_archive
+        command: [ "bash", "-c",
+            "until nslookup mysql; do echo waiting for myservice; sleep 2; done; \
+            python3 manage.py makemigrations; \
+            python3 manage.py migrate"]
+        env:
+        - name: DJANGO_MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: DJANGO_MYSQL_ROOT_PASSWORD
+        - name: DJANGO_MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: DJANGO_MYSQL_DATABASE
+        - name: DJANGO_MYSQL_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: DJANGO_MYSQL_PORT
+        - name: DJANGO_MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: DJANGO_MYSQL_USER
+        - name: DJANGO_MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: DJANGO_MYSQL_PASSWORD
+        - name: S3_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: S3_ACCESS_KEY
+        - name: S3_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: S3_SECRET_KEY
+        - name: DJANGO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: DJANGO_SECRET_KEY
+      containers:
+      - image: barkmight/video_archive
+        name: django
+        ports:
+        - containerPort: 8000
+        command: [ "gunicorn",
+          "--bind", "0.0.0.0:8000",
+          "--workers", "3",
+          "--access-logfile", "/var/log/gunicorn-access.log",
+          "video_archive.wsgi" ]
+        env:
+        - name: DJANGO_DEBUG
+          value: 'True'
+        - name: DJANGO_MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: DJANGO_MYSQL_ROOT_PASSWORD
+        - name: DJANGO_MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: DJANGO_MYSQL_DATABASE
+        - name: DJANGO_MYSQL_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: DJANGO_MYSQL_PORT
+        - name: DJANGO_MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: DJANGO_MYSQL_USER
+        - name: DJANGO_MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: DJANGO_MYSQL_PASSWORD
+        - name: S3_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: S3_URL
+        - name: S3_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: S3_ACCESS_KEY
+        - name: S3_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: S3_SECRET_KEY
+        - name: CELERY_BROKER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: CELERY_BROKER_URL
+
+# Celery worker
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery
+  labels:
+    name: celery
+spec:
+  selector:
+    matchLabels:
+      name: celery
+  template:
+    metadata:
+      labels:
+        name: celery
+    spec:
+      containers:
+      - image: barkmight/video_archive
+        name: celery
+        command: [ "bash", "-c",
+          "celery -A App worker -l info" ]
+        env:
+        - name: DJANGO_MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: DJANGO_MYSQL_ROOT_PASSWORD
+        - name: DJANGO_MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: DJANGO_MYSQL_DATABASE
+        - name: DJANGO_MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: DJANGO_MYSQL_USER
+        - name: DJANGO_MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: DJANGO_MYSQL_PASSWORD
+        - name: S3_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: S3_URL
+        - name: S3_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: S3_ACCESS_KEY
+        - name: S3_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: S3_SECRET_KEY
+        - name: CELERY_BROKER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: config
+              key: CELERY_BROKER_URL
