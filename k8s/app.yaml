@@ -355,3 +355,8 @@ spec:
             configMapKeyRef:
               name: config
               key: CELERY_BROKER_URL
+        - name: DJANGO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: DJANGO_SECRET_KEY
