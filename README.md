@@ -19,10 +19,18 @@ For example, it keeps some secrets right in the repo in secret.yaml file, it alm
 
 ### Instructions:
 
+Ignore `DRAFT` directory.
+
 The application uses standard RabbitMQ, Minio (to emulate some S3 service) and MySQL Docker images. All deployments and services are combined into a single YAML (I do know that's not nice). For the application itself and celery workers a custom Docker image should be built. Do:
 
 ```cd django && docker build -t video_archive .```
 
-or try to pull it as `barkmight/video_archive`.
+or try to pull it as `barkmight/video_archive` (adjust the name of an image in `app.yaml` if needed).
 
 (Yes, a single big image for both application and Celery workers. Look, that's not very wise but after all this is a test task and polisihn it to an ideal state would taken a bunch of time. Unpaid time !)
+
+After that just do `kubectl apply -f k8s/*`.
+
+In production some S3 service provider should be used but here to emulate a S3 service I just use Minio. A job with a code to set up Minio is in `minio_setup_job.yml`.
+
+I tested it using K3s and just used Traefik ingress rules as K3s includes traefik by default.
