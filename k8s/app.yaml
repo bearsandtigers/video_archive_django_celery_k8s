@@ -228,11 +228,6 @@ spec:
             secretKeyRef:
               name: secret
               key: S3_SECRET_KEY
-        - name: DJANGO_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: secret
-              key: DJANGO_SECRET_KEY
       containers:
       - image: barkmight/video_archive
         name: django
@@ -291,6 +286,11 @@ spec:
             configMapKeyRef:
               name: config
               key: CELERY_BROKER_URL
+        - name: DJANGO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: secret
+              key: DJANGO_SECRET_KEY
 
 # Celery worker
 ---
