@@ -138,22 +138,22 @@ spec:
           valueFrom:
             secretKeyRef:
               name: secret
-              key: MYSQL_ROOT_PASSWORD
+              key: DJANGO_MYSQL_ROOT_PASSWORD
         - name: MYSQL_DATABASE
           valueFrom:
             configMapKeyRef:
               name: config
-              key: MYSQL_DATABASE
+              key: DJANGO_MYSQL_DATABASE
         - name: MYSQL_USER
           valueFrom:
             configMapKeyRef:
               name: config
-              key: MYSQL_USER
+              key: DJANGO_MYSQL_USER
         - name: MYSQL_PASSWORD
           valueFrom:
             secretKeyRef:
               name: secret
-              key: MYSQL_PASSWORD
+              key: DJANGO_MYSQL_PASSWORD
 
 # Django application
 ---
